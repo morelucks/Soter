@@ -4,6 +4,7 @@ import './globals.css';
 import { QueryProvider } from '@/lib/query-provider';
 import { Navbar } from '@/components/Navbar';
 import { ToastProvider } from '@/components/ToastProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -31,12 +32,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
-        <QueryProvider>
-          <ToastProvider>
-            <Navbar />
-            {children}
-          </ToastProvider>
-        </QueryProvider>
+        <ErrorBoundary>
+          <QueryProvider>
+            <ToastProvider>
+              <Navbar />
+              {children}
+            </ToastProvider>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
