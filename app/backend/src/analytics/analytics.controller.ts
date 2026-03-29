@@ -61,6 +61,7 @@ import {
   GlobalStatsQuery,
   MapDataDto,
   MapDataQuery,
+  GeoJsonFeatureCollection,
 } from './dto';
 
 @Controller('analytics')
@@ -69,7 +70,6 @@ export class AnalyticsController {
 
   constructor(private readonly analyticsService: AnalyticsService) {}
 
- 
   @Get('global-stats')
   @HttpCode(HttpStatus.OK)
   async getGlobalStats(
@@ -83,7 +83,6 @@ export class AnalyticsController {
     return this.analyticsService.getGlobalStats(query);
   }
 
- 
   @Get('map-data')
   @HttpCode(HttpStatus.OK)
   async getMapData(
@@ -94,5 +93,17 @@ export class AnalyticsController {
     const query: MapDataQuery = { region, token, status };
     this.logger.log(`GET /analytics/map-data ${JSON.stringify(query)}`);
     return this.analyticsService.getMapData(query);
+  }
+
+  @Get('map-anonymized')
+  @HttpCode(HttpStatus.OK)
+  async getMapAnonymizedData(
+    @Query('region') region?: string,
+    @Query('token') token?: string,
+    @Query('status') status?: string,
+  ): Promise<GeoJsonFeatureCollection> {
+    const query: MapDataQuery = { region, token, status };
+    this.logger.log(`GET /analytics/map-anonymized ${JSON.stringify(query)}`);
+    return this.analyticsService.getMapAnonymizedData(query);
   }
 }

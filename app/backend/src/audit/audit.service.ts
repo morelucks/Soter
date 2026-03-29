@@ -130,7 +130,7 @@ export class AuditService {
       this.prisma.auditLog.count({ where }),
     ]);
 
-    const data: AnonymizedAuditLog[] = rows.map((row) => ({
+    const data: AnonymizedAuditLog[] = rows.map(row => ({
       id: row.id,
       actorHash: this.anonymize(row.actorId),
       entity: row.entity,
@@ -149,9 +149,8 @@ export class AuditService {
       return `"${str}"`;
     };
 
-    const header =
-      'id,actorHash,entity,entityHash,action,timestamp,metadata';
-    const lines = rows.map((r) => {
+    const header = 'id,actorHash,entity,entityHash,action,timestamp,metadata';
+    const lines = rows.map(r => {
       const metadata = escape(JSON.stringify(r.metadata ?? ''));
       return [
         escape(r.id),

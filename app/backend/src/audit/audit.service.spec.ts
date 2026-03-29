@@ -128,22 +128,24 @@ describe('AuditService', () => {
     });
 
     it('should throw BadRequestException for invalid from date', async () => {
-      await expect(
-        service.exportLogs({ from: 'not-a-date' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.exportLogs({ from: 'not-a-date' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for invalid to date', async () => {
-      await expect(
-        service.exportLogs({ to: 'not-a-date' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.exportLogs({ to: 'not-a-date' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('buildCsv', () => {
     it('should include header row', () => {
       const csv = service.buildCsv([]);
-      expect(csv).toBe('id,actorHash,entity,entityHash,action,timestamp,metadata');
+      expect(csv).toBe(
+        'id,actorHash,entity,entityHash,action,timestamp,metadata',
+      );
     });
 
     it('should use CRLF line endings (RFC 4180)', () => {

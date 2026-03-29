@@ -45,12 +45,37 @@ export class AuditController {
   @ApiUnauthorizedResponse({
     description: 'Missing or invalid authentication credentials.',
   })
-  @ApiQuery({ name: 'format', required: false, enum: ['json', 'csv'], description: 'Export format (default: json)' })
-  @ApiQuery({ name: 'from', required: false, description: 'Start date (ISO string)' })
-  @ApiQuery({ name: 'to', required: false, description: 'End date (ISO string)' })
-  @ApiQuery({ name: 'entity', required: false, description: 'Filter by entity type' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Items per page (default: 50, max: 200)' })
+  @ApiQuery({
+    name: 'format',
+    required: false,
+    enum: ['json', 'csv'],
+    description: 'Export format (default: json)',
+  })
+  @ApiQuery({
+    name: 'from',
+    required: false,
+    description: 'Start date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    description: 'End date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'entity',
+    required: false,
+    description: 'Filter by entity type',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 50, max: 200)',
+  })
   async exportLogs(
     @Query() query: ExportAuditQuery & { format?: string },
     @Res({ passthrough: true }) res: Response,

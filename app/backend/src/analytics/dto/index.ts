@@ -1,4 +1,3 @@
-
 export interface BreakdownEntry {
   label: string;
   totalAmount: number;
@@ -21,7 +20,6 @@ export interface GlobalStatsDto {
   computedAt: string;
 }
 
-
 export interface MapDataPoint {
   id: string;
   lat: number;
@@ -34,6 +32,21 @@ export interface MapDataPoint {
 
 export interface MapDataDto {
   points: MapDataPoint[];
+  computedAt: string;
+}
+
+export interface GeoJsonFeature {
+  type: 'Feature';
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [lng, lat]
+  };
+  properties: Omit<MapDataPoint, 'lat' | 'lng'>;
+}
+
+export interface GeoJsonFeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJsonFeature[];
   computedAt: string;
 }
 

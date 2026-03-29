@@ -66,7 +66,10 @@ describe('AuditController', () => {
 
     it('should return the result object for JSON format', async () => {
       const res = makeRes();
-      const returned = await controller.exportLogs({ page: 1, limit: 10 }, res as any);
+      const returned = await controller.exportLogs(
+        { page: 1, limit: 10 },
+        res as any,
+      );
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.exportLogs).toHaveBeenCalledWith({ page: 1, limit: 10 });
       expect(returned).toBe(mockExportResult);
@@ -74,7 +77,10 @@ describe('AuditController', () => {
 
     it('should return CSV string and set headers when format=csv', async () => {
       const res = makeRes();
-      const returned = await controller.exportLogs({ format: 'csv' } as any, res as any);
+      const returned = await controller.exportLogs(
+        { format: 'csv' } as any,
+        res as any,
+      );
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.buildCsv).toHaveBeenCalledWith(mockExportResult.data);
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv');
