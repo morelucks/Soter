@@ -11,7 +11,7 @@ import {
   BreakdownEntry,
   TimeframeBucket,
 } from './dto';
-import { RedisService } from 'cache/redis.service';
+import { RedisService } from '../../cache/redis.service';
 
 // export type MapDataPoint = {
 //   id: string;
