@@ -1,9 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useCampaigns, useCreateCampaign, useUpdateCampaign } from '@/hooks/useCampaigns';
 import type { CampaignStatus } from '@/types/campaign';
+import type { AidPackageFilters } from '@/types/aid-package';
 import { ExportControls } from '@/components/dashboard/ExportControls';
+import { FilterPresets } from '@/components/dashboard/FilterPresets';
 
 const ALLOWED_ROLES = ['ngo', 'admin'];
 const userRole = process.env.NEXT_PUBLIC_USER_ROLE ?? 'guest';
@@ -16,7 +19,28 @@ const statusStyles: Record<CampaignStatus, string> = {
   archived: 'bg-red-100 text-red-800',
 };
 
+/** Map AidPackageFilters status values to CampaignStatus (best-effort). */
+function toCampaignStatus(value: string): CampaignStatus | '' {
+  const map: Record<string, CampaignStatus> = {
+    Active: 'active',
+    active: 'active',
+    Expired: 'archived',
+    archived: 'archived',
+    Claimed: 'completed',
+    completed: 'completed',
+    paused: 'paused',
+    draft: 'draft',
+  };
+  return map[value] ?? '';
+}
+
 export default function CampaignsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // URL-synced filter state
+  const urlStatus = searchParams.get('status') ?? '';
+
   const { data: campaigns = [], isLoading, isError, error } = useCampaigns();
   const createCampaign = useCreateCampaign();
   const updateCampaign = useUpdateCampaign();
@@ -27,10 +51,41 @@ export default function CampaignsPage() {
   const [expiry, setExpiry] = useState('');
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
-  const activeCampaigns = useMemo(
-    () => campaigns.filter(campaign => campaign.status !== 'archived'),
-    [campaigns]
+  // ── Filter helpers ─────────────────────────────────────────────────────────
+
+  function updateParam(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set(key, value);
+    else params.delete(key);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }
+
+  const handleApplyPreset = useCallback(
+    (preset: AidPackageFilters) => {
+      const params = new URLSearchParams();
+      if (preset.status) params.set('status', preset.status);
+      router.replace(params.size ? `?${params.toString()}` : '?', { scroll: false });
+    },
+    [router],
   );
+
+  // Convert URL status param → CampaignStatus for filtering
+  const activeCampaignStatus = toCampaignStatus(urlStatus);
+
+  const activeCampaigns = useMemo(
+    () =>
+      campaigns.filter(campaign => {
+        if (campaign.status === 'archived') return false;
+        if (activeCampaignStatus) return campaign.status === activeCampaignStatus;
+        return true;
+      }),
+    [campaigns, activeCampaignStatus],
+  );
+
+  // Thin wrapper so FilterPresets can read the current filter state
+  const currentFilters: AidPackageFilters = {
+    status: urlStatus as AidPackageFilters['status'],
+  };
 
   if (!ALLOWED_ROLES.includes(userRole)) {
     return (
@@ -102,6 +157,7 @@ export default function CampaignsPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
+          {/* ── Create Campaign Form ── */}
           <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Create New Campaign</h2>
             {formMessage && (
@@ -114,7 +170,7 @@ export default function CampaignsPage() {
                 <span className="font-medium">Name</span>
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. Winter Relief 2026"
                   required
@@ -127,7 +183,7 @@ export default function CampaignsPage() {
                   type="number"
                   min="0"
                   value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
+                  onChange={e => setBudget(e.target.value)}
                   className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. 25000"
                   required
@@ -138,7 +194,7 @@ export default function CampaignsPage() {
                 <span className="font-medium">Token</span>
                 <input
                   value={token}
-                  onChange={(e) => setToken(e.target.value)}
+                  onChange={e => setToken(e.target.value)}
                   className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. USDC"
                 />
@@ -149,7 +205,7 @@ export default function CampaignsPage() {
                 <input
                   type="date"
                   value={expiry}
-                  onChange={(e) => setExpiry(e.target.value)}
+                  onChange={e => setExpiry(e.target.value)}
                   className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </label>
@@ -164,20 +220,50 @@ export default function CampaignsPage() {
             </form>
           </section>
 
-          <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          {/* ── Campaign List + Filters + Presets ── */}
+          <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <h2 className="text-xl font-semibold">Active Campaigns</h2>
               <ExportControls context="Campaigns" filters={{ activeOnly: true }} />
             </div>
 
+            {/* Status filter pills — syncs to URL */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">Filter:</span>
+              {(['', 'active', 'paused', 'completed'] as const).map(s => (
+                <button
+                  key={s || 'all'}
+                  onClick={() => updateParam('status', s)}
+                  className={`h-7 px-3 rounded-full border text-xs font-medium transition-colors ${
+                    urlStatus === s
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
+                  }`}
+                >
+                  {s || 'All'}
+                </button>
+              ))}
+            </div>
+
+            {/* Preset bar — save / apply / delete / copy / restore */}
+            <FilterPresets
+              filters={currentFilters}
+              scope="campaigns"
+              onApply={handleApplyPreset}
+            />
+
             {isLoading && <p>Loading campaigns…</p>}
-            {isError && <p className="text-red-500">Error fetching campaigns: {(error as Error)?.message}</p>}
+            {isError && (
+              <p className="text-red-500">
+                Error fetching campaigns: {(error as Error)?.message}
+              </p>
+            )}
             {!isLoading && !isError && activeCampaigns.length === 0 && (
-              <p className="text-gray-500">No active campaigns available.</p>
+              <p className="text-gray-500">No campaigns match the current filter.</p>
             )}
 
             <div className="space-y-3">
-              {activeCampaigns.map((campaign) => (
+              {activeCampaigns.map(campaign => (
                 <div
                   key={campaign.id}
                   className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-950"
@@ -185,11 +271,26 @@ export default function CampaignsPage() {
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <h3 className="text-lg font-semibold">{campaign.name}</h3>
-                      <p className="text-sm text-gray-500">Budget: {campaign.budget.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                      <p className="text-sm text-gray-500">Token: {campaign.metadata?.token ?? 'N/A'}</p>
-                      <p className="text-sm text-gray-500">Expiry: {campaign.metadata?.expiry ? new Date(campaign.metadata.expiry as string).toLocaleDateString() : 'N/A'}</p>
+                      <p className="text-sm text-gray-500">
+                        Budget:{' '}
+                        {campaign.budget.toLocaleString('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                        })}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Token: {campaign.metadata?.token ?? 'N/A'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Expiry:{' '}
+                        {campaign.metadata?.expiry
+                          ? new Date(campaign.metadata.expiry as string).toLocaleDateString()
+                          : 'N/A'}
+                      </p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusStyles[campaign.status]}`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${statusStyles[campaign.status]}`}
+                    >
                       {campaign.status}
                     </span>
                   </div>
