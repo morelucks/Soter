@@ -34,6 +34,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AidEscrowModule } from './onchain/aid-escrow.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { SessionModule } from './session/session.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
     AnalyticsModule,
     AidEscrowModule,
     ApiKeysModule,
+    SessionModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 seconds window
